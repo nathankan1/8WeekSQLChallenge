@@ -1,0 +1,20 @@
+--A. Customer Journey
+--Based off the 8 sample customers provided in the sample from the subscriptions table, 
+--write a brief description about each customer’s onboarding journey.
+--Try to keep it as short as possible - you may also want to run some sort of join to make your explanations a bit easier!
+
+SELECT 
+	customer_id,
+	s.plan_id,
+	start_date,
+	plan_name,
+	price
+FROM subscriptions AS s
+INNER JOIN plans AS p ON p.plan_id=s.plan_id
+WHERE customer_id IN (1,2,11,13,15,16,18,19)
+
+-- By joining the subscriptions and plans tables, we can understand a bit more about each customer's journey
+-- Immediately, when we look when price is null, we see customer 11 and 15 choosing to quit their plans, customer 11 after one week trial and customer 15 after they signed up for the Pro package after finishing the trial, and then leaving the pro monthly after a little over a month.
+-- Next, we see customers 2, 16, and 19 being on the pro annual, with 16 and 19 starting the annual after a trial and monthly subscription and customer 2 starting pro annual right after their trial.
+-- Lastly, we see customers 1, 13, and 18 being on a monthly plan after the trial.
+-- All in all, we see these customers all using the trial and making various decisions after.

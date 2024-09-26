@@ -1,0 +1,88 @@
+--D. Pricing and Ratings
+
+--If a Meat Lovers pizza costs $12 and Vegetarian costs $10 and there were no charges for changes 
+--how much money has Pizza Runner made so far if there are no delivery fees?
+
+SELECT 
+	SUM(CASE
+		WHEN pizza_id = 1 THEN 12
+		ELSE 10
+	END) AS revenue
+FROM pizza_runner.customer_orders AS co
+INNER JOIN pizza_runner.runner_orders AS ro ON ro.order_id = co.order_ID
+WHERE cancellation IS NULL OR cancellation='null' OR cancellation='';
+
+--What if there was an additional $1 charge for any pizza extras?
+--Add cheese is $1 extra
+
+WITH CTE AS(
+SELECT 
+	SUM(CASE
+		WHEN pizza_id = 1 THEN 12
+		ELSE 10
+	END) AS revenue
+FROM pizza_runner.customer_orders AS co
+INNER JOIN pizza_runner.runner_orders AS ro ON ro.order_id = co.order_ID
+WHERE cancellation IS NULL OR cancellation='null' OR cancellation=''
+UNION ALL
+SELECT 
+	COUNT(*)::int AS toppings_revenue
+FROM pizza_runner.customer_orders
+WHERE extras<>NULL OR extras<>'null' AND extras<>'')
+SELECT
+	SUM(revenue)
+FROM CTE;
+
+--The Pizza Runner team now wants to add an additional ratings system that allows customers to rate their runner, 
+--how would you design an additional table for this new dataset - generate a schema for this new table 
+--and insert your own data for ratings for each successful customer order between 1 to 5.
+
+SELECT *
+FROM my_pizza_runner.ratings;
+
+--Using your newly generated table - can you join all of the information together to form a table which has the following information for successful deliveries?
+--customer_id
+--order_id
+--runner_id
+--rating
+--order_time
+--pickup_time
+--Time between order and pickup
+--Delivery duration
+--Average speed
+--Total number of pizzas
+
+SELECT
+	co.customer_id,
+	co.order_id,
+	runner_id,
+	rating,
+	order_time,
+	pickup_time::timestamp,
+	EXTRACT(MINUTE FROM pickup_time::timestamp - order_time) AS time_between_order_and_pickup,
+	duration,
+	ROUND((LEFT(distance,2)::INT)/(LEFT(duration,2)::INT)::DECIMAL(5,2)*60,2) AS average_speed_km_per_hour,
+	COUNT(*) OVER (PARTITION BY co.order_id) AS total_number_of_pizzas
+FROM pizza_runner.runner_orders AS ro
+INNER JOIN my_pizza_runner.ratings AS r ON ro.order_id = r.order_id
+INNER JOIN pizza_runner.customer_orders AS co ON ro.order_id = co.order_id
+WHERE pickup_time<>'null';
+
+--If a Meat Lovers pizza was $12 and Vegetarian $10 fixed prices with no cost for extras and each runner is paid $0.30 per kilometre traveled 
+-- how much money does Pizza Runner have left over after these deliveries?
+
+WITH CTE AS(
+SELECT
+	co.order_id,
+	CASE
+		WHEN pizza_id = 1 THEN 12
+		ELSE 10
+		END AS pizza_rev,
+	LEFT(distance,2)::INTEGER*0.3 AS runner_rev
+FROM pizza_runner.runner_orders AS ro
+INNER JOIN pizza_runner.customer_orders AS co ON co.order_id=ro.order_id
+WHERE pickup_time<>'null'
+	)
+SELECT
+	SUM(pizza_rev + runner_rev) AS total_rev
+FROM CTE
